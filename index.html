@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Knox.ai</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #7d8590;
+            --accent-primary: #238636;
+            --accent-secondary: #1f6feb;
+            --border-color: #30363d;
+            --hover-bg: #262c36;
+            --danger-color: #da3633;
+            --warning-color: #ffa657;
+            --purple: #8b5cf6;
+            --gold: #f59e0b;
+        }
+
+        html {
+            /* Prevent zoom on iOS */
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            height: 100dvh; /* Better mobile support */
+            overflow: hidden;
+            /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            /* Fix for mobile Safari */
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Loading Spinner Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(13, 17, 23, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(31, 111, 235, 0.2);
+            border-left: 4px solid #1f6feb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #1f6feb;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        /* Corner Notification Card - Enhanced Mobile */
+        .corner-notification {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            right: 10px;
+            left: 10px;
+            background: linear-gradient(135deg, #da3633, #b91c1c);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(218, 54, 51, 0.4);
+            z-index: 10000;
+            transform: translateY(-120px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .corner-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .corner-notification.hide {
+            transform: translateY(-120px);
+            opacity: 0;
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .notification-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .notification-icon {
+            width: 18px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-message {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 0.75rem;
+            opacity: 0.95;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .notification-button {
+            padding: 0.5rem 0.875rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            min-height: 40px;
+            min-width: 80px;
+        }
+
+        .notification-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .notification-button.primary {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Authentication Screens - Mobile Enhanced */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+        }
+
+        .auth-form {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin: 1rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-logo {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px; /* Prevents zoom on iOS */
+            transition: all 0.2s ease;
+            min-height: 48px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--accent-secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+            min-height: 48px;
+        }
+
+        .auth-button:hover {
+            background: #1a7ef8;
+            transform: translateY(-1px);
+        }
+
+        .auth-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-switch {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .auth-switch a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message, .success-message {
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .error-message {
+            background: rgba(218, 54, 51, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .success-message {
+            background: rgba(35, 134, 54, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Main Chat Interface - Mobile Enhanced */
+        .chat-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            background: var(--bg-primary);
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .chat-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            min-height: 60px;
+            flex-wrap: nowrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            white-space: nowrap;
+        }
+
+        .model-selector {
+            position: relative;
+            flex: 1;
+            max-width: 140px;
+        }
+
+        .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            font-size: 0.85rem;
+            min-height: 40px;
+        }
+
+        .dropdown-toggle:hover {
+            background: var(--hover-bg);
+            border-color: var(--accent-secondary);
+        }
+
+        .selected-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .dropdown-arrow {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+            fill: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .dropdown-toggle.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 90vw;
+            max-width: 320px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.visible {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .menu-item {
+            padding: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 60px;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .menu-item-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .item-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .item-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-new {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        }
+
+        .badge-pro {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        }
+
+        .pro-icon, .new-icon {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .new-chat-button {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8rem;
+            min-height: 40px;
+            white-space: nowrap;
+        }
+
+        .new-chat-button:hover {
+            background: var(--hover-bg);
+            border-color: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .new-chat-icon {
+            width: 14px;
+            height: 14px;
+            fill: var(--text-primary);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+        }
+
+        .user-avatar:hover {
+            background: #1a7ef8;
+            transform: scale(1.05);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 90vw;
+            max-width: 280px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .user-dropdown.visible {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        .user-info {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .user-plan {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .usage-info {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .usage-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .usage-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .usage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.3s ease;
+        }
+
+        .usage-text {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .reset-timer {
+            font-size: 0.75rem;
+            color: var(--warning-color);
+            margin-top: 0.25rem;
+        }
+
+        .dropdown-item {
+            padding: 0.875rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            min-height: 48px;
+        }
+
+        .dropdown-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .dropdown-item.logout {
+            color: var(--danger-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .message-counter {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .message-counter.warning {
+            background: var(--warning-color);
+            color: var(--bg-primary);
+            animation: warningPulse 1s infinite;
+        }
+
+        .message-counter.exceeded {
+            background: var(--danger-color);
+            color: white;
+            animation: exceededPulse 1s infinite;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes exceededPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background: var(--bg-primary);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--accent-secondary);
+            color: white;
+            margin-left: auto;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .limit-reached-message {
+            align-self: center;
+            background: linear-gradient(135deg, rgba(218, 54, 51, 0.15), rgba(218, 54, 51, 0.05)) !important;
+            border: 2px solid var(--danger-color) !important;
+            color: var(--danger-color);
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(218, 54, 51, 0.3) !important;
+            animation: limitReachedPulse 1.5s infinite !important;
+        }
+
+        @keyframes limitReachedPulse {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 4px 12px rgba(218, 54, 51, 0.3);
+            }
+            50% { 
+                opacity: 0.9; 
+                transform: scale(1.02);
+                box-shadow: 0 6px 16px rgba(218, 54, 51, 0.4);
+            }
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            max-width: 80px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: var(--accent-secondary);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .math-result {
+            background: linear-gradient(135deg, var(--accent-primary), #2ea043);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 0.75rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-weight: 600;
+        }
+
+        .math-expression {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            background: var(--bg-tertiary);
+            color: var(--accent-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-input-container {
+            padding: 0.875rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.875rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .quick-actions::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-action {
+            padding: 0.5rem 0.875rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+        }
+
+        .quick-action:hover {
+            background: var(--hover-bg);
+            border-color: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .quick-action.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-action.disabled:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 48px;
+            max-height: 100px;
+            padding: 0.875rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            resize: none;
+            font-family: inherit;
+            font-size: 16px; /* Prevents zoom on iOS */
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.1);
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .chat-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-button {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-secondary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #1a7ef8;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            background: var(--text-secondary);
+        }
+
+        .pause-button {
+            background: var(--danger-color);
+            animation: pulseRed 1s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Message Actions */
+        .message-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+
+        .message-action-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.375rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        .message-action-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .message-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .message-action-btn.positive:hover {
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .message-action-btn.negative:hover {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        /* Pro upgrade button styles */
+        .pro-upgrade-button {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #000;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            min-height: 48px;
+        }
+
+        .pro-upgrade-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+        }
+
+        /* Stars decoration */
+        .stars-decoration {
+            font-size: 1.5rem;
+            animation: sparkle 2s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(180deg); }
+        }
+
+        /* Mobile-specific optimizations */
+        @media (max-width: 768px) {
+            .auth-form {
+                margin: 0.5rem;
+                padding: 1.25rem;
+                border-radius: 12px;
+            }
+
+            .auth-title {
+                font-size: 1.1rem;
+            }
+
+            .auth-logo {
+                font-size: 1.8rem;
+            }
+
+            .chat-header {
+                padding: 0.5rem 0.75rem;
+                min-height: 56px;
+                flex-wrap: nowrap;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+                gap: 0.5rem;
+            }
+
+            .logo {
+                font-size: 1rem;
+            }
+
+            .model-selector {
+                max-width: 120px;
+            }
+
+            .dropdown-toggle {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+                min-height: 36px;
+            }
+
+            .dropdown-menu {
+                min-width: 95vw;
+                max-width: 320px;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+            }
+
+            .header-right {
+                gap: 0.375rem;
+                flex-shrink: 0;
+            }
+
+            .new-chat-button {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.75rem;
+                min-height: 36px;
+            }
+
+            .new-chat-button .new-chat-icon {
+                width: 12px;
+                height: 12px;
+            }
+
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.8rem;
+            }
+
+            .message-counter {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.625rem;
+            }
+
+            .status-indicator {
+                display: none;
+            }
+
+            .user-dropdown {
+                min-width: 95vw;
+                max-width: 280px;
+                right: 0.5rem;
+                left: 0.5rem;
+            }
+
+            .chat-messages {
+                padding: 0.5rem;
+                gap: 0.5rem;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 0.75rem 0.875rem;
+                font-size: 0.875rem;
+                line-height: 1.4;
+            }
+
+            .chat-input-container {
+                padding: 0.75rem;
+                padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+            }
+
+            .quick-actions {
+                gap: 0.375rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .quick-action {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
+                min-height: 32px;
+            }
+
+            .chat-input {
+                font-size: 16px;
+                padding: 0.75rem 0.875rem;
+                min-height: 44px;
+                max-height: 88px;
+            }
+
+            .send-button {
+                width: 44px;
+                height: 44px;
+                font-size: 14px;
+            }
+
+            .item-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.4rem;
+            }
+
+            .menu-item {
+                padding: 0.75rem;
+                min-height: 54px;
+            }
+
+            .dropdown-item {
+                padding: 0.75rem;
+                min-height: 44px;
+                font-size: 0.9rem;
+            }
+
+            .corner-notification {
+                top: env(safe-area-inset-top, 8px);
+                left: 8px;
+                right: 8px;
+                padding: 0.875rem;
+            }
+
+            .notification-title {
+                font-size: 0.9rem;
+            }
+
+            .notification-message {
+                font-size: 0.8rem;
+            }
+
+            .notification-button {
+                min-height: 36px;
+                min-width: 70px;
+                font-size: 0.7rem;
+                padding: 0.4rem 0.7rem;
+            }
+
+            .message-action-btn {
+                min-width: 28px;
+                min-height: 28px;
+                padding: 0.25rem;
+            }
+
+            .message-action-btn svg {
+                width: 12px;
+                height: 12px;
+            }
+        }
+
+        /* Extra small screens (iPhone SE, small Android) */
+        @media (max-width: 480px) {
+            .auth-form {
+                margin: 0.25rem;
+                padding: 1rem;
+            }
+
+            .chat-header {
+                padding: 0.375rem 0.5rem;
+                min-height: 52px;
+            }
+
+            .logo {
+                font-size: 0.9rem;
+            }
+
+            .model-selector {
+                max-width: 100px;
+            }
+
+            .dropdown-toggle {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.5rem;
+                min-height: 32px;
+            }
+
+            .header-right {
+                gap: 0.25rem;
+            }
+
+            .new-chat-button {
+                padding: 0.375rem;
+                font-size: 0;
+                min-height: 32px;
+                width: 32px;
+            }
+
+            .new-chat-button span {
+                display: none;
+            }
+
+            .message-counter {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.5rem;
+            }
+
+            .user-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75rem;
+            }
+
+            .quick-actions {
+                display: none;
+            }
+
+            .chat-input {
+                min-height: 40px;
+                padding: 0.625rem 0.75rem;
+                font-size: 16px;
+            }
+
+            .send-button {
+                width: 40px;
+                height: 40px;
+                font-size: 12px;
+            }
+
+            .input-wrapper {
+                gap: 0.5rem;
+            }
+
+            .chat-input-container {
+                padding: 0.5rem;
+                padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Landscape mode adjustments for mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .chat-header {
+                min-height: 48px;
+                padding: 0.375rem 0.75rem;
+            }
+
+            .quick-actions {
+                display: none;
+            }
+
+            .chat-messages {
+                padding: 0.5rem;
+            }
+
+            .message {
+                padding: 0.625rem 0.75rem;
+            }
+
+            .chat-input-container {
+                padding: 0.5rem 0.75rem;
+                padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            }
+
+            .chat-input {
+                min-height: 36px;
+                max-height: 72px;
+            }
+
+            .send-button {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
+        /* Samsung Galaxy A12 specific optimizations */
+        @media (max-width: 412px) and (max-height: 915px) {
+            .chat-container {
+                height: 100vh;
+                height: 100svh; /* Small viewport height */
+            }
+
+            .auth-container {
+                min-height: 100vh;
+                min-height: 100svh;
+            }
+
+            .dropdown-menu {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .user-dropdown {
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+        }
+
+        /* iPhone specific optimizations */
+        @supports (-webkit-appearance: none) {
+            .chat-container {
+                height: 100vh;
+                height: -webkit-fill-available;
+            }
+
+            .auth-container {
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+            }
+
+            /* Fix for iOS Safari bottom bar */
+            .chat-input-container {
+                padding-bottom: max(0.875rem, env(safe-area-inset-bottom, 0.875rem));
+            }
+        }
+
+        /* Custom scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Improve text rendering on mobile */
+        .message strong {
+            color: var(--accent-primary);
+        }
+
+        .ai-message a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        .ai-message a:hover {
+            text-decoration: underline;
+        }
+
+        /* Focus styles for accessibility */
+        .chat-input:focus,
+        .send-button:focus,
+        .dropdown-toggle:focus,
+        .auth-button:focus,
+        .form-input:focus {
+            outline: 2px solid var(--accent-secondary);
+            outline-offset: 2px;
+        }
+
+        /* Reduce motion for users who prefer it */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Sinhala Language Support */
+        .sinhala-text {
+            font-family: 'Noto Sans Sinhala', 'Iskoola Pota', 'FMAbhaya', sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Language indicator */
+        .language-indicator {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Dark mode improvements for OLED screens */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #000000;
+                --bg-secondary: #0d1117;
+                --bg-tertiary: #161b22;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #58a6ff;
+                --text-secondary: #e6edf3;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .chat-header,
+            .chat-input-container,
+            .corner-notification {
+                display: none;
+            }
+
+            .chat-container {
+                height: auto;
+            }
+
+            .message {
+                break-inside: avoid;
+                max-width: 100%;
+            }
+        }
+
+        /* Safe area adjustments for newer phones */
+        @supports (padding: max(0px)) {
+            .chat-container {
+                padding-left: max(env(safe-area-inset-left, 0), 0);
+                padding-right: max(env(safe-area-inset-right, 0), 0);
+            }
+
+            .corner-notification {
+                left: max(env(safe-area-inset-left, 10px), 10px);
+                right: max(env(safe-area-inset-right, 10px), 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Corner Notification Card -->
+    <div class="corner-notification" id="cornerNotification">
+        <div class="notification-header">
+            <div class="notification-title">
+                <div class="notification-icon">!</div>
+                <span>Message Limit Reached</span>
+            </div>
+            <button class="notification-close" onclick="hideCornerNotification()">×</button>
+        </div>
+        <div class="notification-message" id="notificationMessage">
+            You've used all 10 messages for the I FEX 1.5 model. Switch models or wait for reset.
+        </div>
+        <div class="notification-actions">
+            <button class="notification-button primary" onclick="switchToOtherModel()">Switch Model</button>
+            <button class="notification-button" onclick="hideCornerNotification()">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Authentication Container -->
+    <div class="auth-container" id="authContainer">
+        <!-- Sign Up Form -->
+        <div class="auth-form" id="signupForm">
+            <div class="auth-header">
+                <div class="auth-logo">🤖</div>
+                <h1 class="auth-title">Welcome to Knox.ai</h1>
+                <p class="auth-subtitle">Create your account to get started</p>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text" id="loadingText">Loading...</div>
+                </div>
+            </div>
+            
+            <div id="signupError" class="error-message" style="display: none;"></div>
+            <div id="signupSuccess" class="success-message" style="display: none;"></div>
+            
+            <form id="signupFormElement">
+                <div class="form-group">
+                    <label class="form-label" for="signupName">Full Name</label>
+                    <input type="text" id="signupName" class="form-input" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" class="form-input" placeholder="Create a password" required>
+                </div>
+                
+                <button type="submit" class="auth-button">Create Account</button>
+            </form>
+            
+            <div class="auth-switch">
+                Already have an account? <a href="#" onclick="showLogin()">Sign in</a>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <div class="auth-form" id="loginForm" style="display: none;">
+            <div class="auth-header">
+                <div class="auth-logo">🤖</div>
+                <h1 class="auth-title">Welcome back</h1>
+                <p class="auth-subtitle">Sign in to your Knox.ai account</p>
+            </div>
+            
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="auth-button">Sign In</button>
+            </form>
+            
+            <div class="auth-switch">
+                Don't have an account? <a href="#" onclick="showSignup()">Sign up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Interface -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="logo">🤖 Knox.ai</div>
+                <div class="model-selector">
+                    <div class="dropdown-toggle" id="dropdown-toggle">
+                        <div class="selected-text">I FEX 1.5</div>
+                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24">
+                            <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown-menu">
+                        <div class="menu-item" data-value="flash" data-limit="10">
+                            <div class="menu-item-content">
+                                <div class="item-info">
+                                    <div class="item-title">Fast all-around help</div>
+                                    <div class="item-subtitle">I FEX 1.5</div>
+                                </div>
+                                <div class="item-badge badge-new">
+                                    <svg class="new-icon" viewBox="0 0 24 24" fill="none">
+                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    New
+                                </div>
+                            </div>
+                        </div>
+                        <div class="menu-item" data-value="pro" data-limit="5">
+                            <div class="menu-item-content">
+                                <div class="item-info">
+                                    <div class="item-title">Best for high powered processes</div>
+                                    <div class="item-subtitle">I FEX 2.0</div>
+                                </div>
+                                <div class="item-badge badge-pro">
+                                    <svg class="pro-icon" viewBox="0 0 24 24" fill="none">
+                                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Pro
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="new-chat-button" onclick="startNewChat()">
+                    <svg class="new-chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+                <div class="message-counter" id="messageCounter">0/10</div>
+                <div class="user-menu">
+                    <div class="user-avatar" id="userAvatar" onclick="toggleUserMenu()"></div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-info">
+                            <div class="user-email" id="userEmail"></div>
+                            <div class="user-plan">Fremium plan</div>
+                        </div>
+                        <div class="usage-info">
+                            <div class="usage-title">Message Usage</div>
+                            <div class="usage-bar">
+                                <div class="usage-fill" id="usageFill"></div>
+                            </div>
+                            <div class="usage-text" id="usageText">0 of 10 messages used</div>
+                            <div class="reset-timer" id="resetTimer" style="display: none;"></div>
+                        </div>
+                        <div class="dropdown-item" onclick="showAccountSettings()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.07a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Account Settings
+                        </div>
+                        <div class="dropdown-item" onclick="showUsageDetails()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 11V5a2 2 0 1 1 4 0v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Usage Details
+                        </div>
+                        <div class="dropdown-item logout" onclick="logout()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Sign Out
+                        </div>
+                    </div>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Online</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">
+                <div class="message-content">
+                    Hello! I'm your advanced AI assistant with comprehensive knowledge across many fields. You have 10 messages available with your current model.<br><br>
+                    I can help you with:<br><br>
+                    • <strong>Mathematics:</strong> Complex calculations, algebra, calculus, statistics<br>
+                    • <strong>Science:</strong> Physics, chemistry, biology, astronomy<br>
+                    • <strong>Movies & Entertainment:</strong> Films, recommendations, analysis<br>
+                    • <strong>History:</strong> World history, civilizations, historical figures<br>
+                    • <strong>Technology:</strong> Programming, AI, computers, software<br>
+                    • <strong>Sinhala Language:</strong> සිංහල භාෂාවෙන් ප්‍රශ්න ඇසීමට හැකියාව<br><br>
+                    Try asking me anything in English or Sinhala! I'll provide detailed answers with realistic typing animations!
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="quick-actions" id="quickActions">
+                <div class="quick-action" onclick="insertQuickAction('Explain quantum mechanics in detail')">Quantum Mechanics</div>
+                <div class="quick-action" onclick="insertQuickAction('Tell me about artificial intelligence')">AI & Technology</div>
+                <div class="quick-action" onclick="insertQuickAction('What is 25 × 16 + 340?')">Math Problem</div>
+                <div class="quick-action" onclick="insertQuickAction('History of World War II')">WWII History</div>
+                <div class="quick-action" onclick="insertQuickAction('Best sci-fi movies of all time')">Sci-Fi Movies</div>
+                <div class="quick-action" onclick="insertQuickAction('ක්වොන්ටම් යාන්ත්‍රික විද්‍යාව ගැන පැහැදිලි කරන්න')">සිංහල - ක්වොන්ටම්</div>
+            </div>
+            <div class="input-wrapper">
+                <textarea 
+                    id="chatInput" 
+                    class="chat-input" 
+                    placeholder="Ask me anything in English or Sinhala... You have messages remaining!"
+                    rows="1"
+                ></textarea>
+                <button id="sendButton" class="send-button">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // User Management System
+        class UserManager {
+            constructor() {
+                this.users = this.loadUsers();
+                this.currentUser = this.loadCurrentUser();
+            }
+
+            loadUsers() {
+                const stored = localStorage.getItem('knox_users');
+                return stored ? JSON.parse(stored) : {};
+            }
+
+            saveUsers() {
+                localStorage.setItem('knox_users', JSON.stringify(this.users));
+            }
+
+            loadCurrentUser() {
+                const stored = localStorage.getItem('knox_current_user');
+                return stored ? JSON.parse(stored) : null;
+            }
+
+            saveCurrentUser(user) {
+                localStorage.setItem('knox_current_user', JSON.stringify(user));
+                this.currentUser = user;
+            }
+
+            signup(name, email, password) {
+                if (this.users[email]) {
+                    throw new Error('Account with this email already exists');
+                }
+
+                const user = {
+                    name,
+                    email,
+                    password,
+                    createdAt: Date.now(),
+                    messageUsage: {
+                        flash: { count: 0, lastReset: Date.now() },
+                        pro: { count: 0, lastReset: Date.now() }
+                    },
+                    currentModel: 'flash'
+                };
+
+                this.users[email] = user;
+                this.saveUsers();
+                return user;
+            }
+
+            login(email, password) {
+                const user = this.users[email];
+                if (!user || user.password !== password) {
+                    throw new Error('Invalid email or password');
+                }
+
+                this.checkAndResetLimits(user);
+                this.saveUsers();
+                return user;
+            }
+
+            checkAndResetLimits(user) {
+                const now = Date.now();
+                const twoHours = 2 * 60 * 60 * 1000;
+
+                ['flash', 'pro'].forEach(model => {
+                    if (now - user.messageUsage[model].lastReset >= twoHours) {
+                        user.messageUsage[model].count = 0;
+                        user.messageUsage[model].lastReset = now;
+                    }
+                });
+            }
+
+            updateMessageCount(model) {
+                if (this.currentUser) {
+                    this.currentUser.messageUsage[model].count++;
+                    this.users[this.currentUser.email] = this.currentUser;
+                    this.saveUsers();
+                    this.saveCurrentUser(this.currentUser);
+                }
+            }
+
+            getTimeToReset(model) {
+                if (!this.currentUser) return null;
+                
+                const now = Date.now();
+                const twoHours = 2 * 60 * 60 * 1000;
+                const lastReset = this.currentUser.messageUsage[model].lastReset;
+                const timeElapsed = now - lastReset;
+                const timeRemaining = twoHours - timeElapsed;
+                
+                if (timeRemaining <= 0) return null;
+                
+                const hours = Math.floor(timeRemaining / (60 * 60 * 1000));
+                const minutes = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000));
+                
+                return `${hours}h ${minutes}m`;
+            }
+
+            logout() {
+                localStorage.removeItem('knox_current_user');
+                this.currentUser = null;
+            }
+
+            getCurrentUserInitials() {
+                if (!this.currentUser) return '';
+                return this.currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+            }
+        }
+
+        // Initialize user manager
+        const userManager = new UserManager();
+
+        // Enhanced knowledge base with Sinhala language support
+        const knowledgeBase = {
+            english: {
+                science: {
+                    'quantum mechanics': `🔬 **Quantum Mechanics** - The branch of physics describing matter and energy behavior at atomic and subatomic scales.<br><br><strong>Key Principles:</strong><br><br><strong>1. Wave-Particle Duality:</strong> All matter exhibits both wave and particle properties.<br><br><strong>2. Uncertainty Principle:</strong> You cannot simultaneously know a particle's exact position and momentum with perfect precision.<br><br><strong>3. Superposition:</strong> Particles exist in multiple states simultaneously until observed.<br><br><strong>4. Quantum Entanglement:</strong> Particles can be mysteriously connected, instantly affecting each other regardless of distance.<br><br><strong>Applications:</strong><br>• Lasers and LED technology<br>• MRI machines in medicine<br>• Computer processors<br>• Quantum computers (developing)<br>• GPS satellite precision`,
+
+                    'artificial intelligence': `🤖 **Artificial Intelligence** - Computer systems performing tasks requiring human intelligence.<br><br><strong>Types of AI:</strong><br><br><strong>1. Narrow AI (ANI):</strong> Specialized systems for specific tasks<br>• Image recognition<br>• Natural language processing<br>• Game playing (Chess, Go)<br>• Recommendation systems<br><br><strong>2. General AI (AGI):</strong> Hypothetical AI matching human abilities<br><br><strong>3. Superintelligence (ASI):</strong> AI surpassing human intelligence<br><br><strong>Machine Learning:</strong><br>• **Supervised Learning:** Training with labeled examples<br>• **Unsupervised Learning:** Finding patterns in data<br>• **Reinforcement Learning:** Learning through trial and error<br><br><strong>Applications:</strong> Autonomous vehicles, medical diagnosis, financial trading, content creation, scientific research acceleration.`,
+
+                    'biodiversity': `🌱 **Biodiversity** - The variety of life on Earth across all levels of biological organization.<br><br><strong>Components:</strong><br><br>• **Animals:** 2.5 million insect species, 40,000+ plant species, 2,200+ fish species<br>• **Indigenous peoples:** 400+ tribes, many uncontacted<br>• **Medicinal plants:** 25% of modern medicines derived from rainforest plants<br><br><strong>Levels:</strong><br>• **Genetic diversity:** Variation within species<br>• **Species diversity:** Number of different species<br>• **Ecosystem diversity:** Variety of habitats and communities<br><br><strong>Threats:</strong><br>• Habitat destruction<br>• Climate change<br>• Pollution<br>• Overexploitation<br>• Invasive species<br><br><strong>Importance:</strong> Ecosystem services, food security, medicine, climate regulation, cultural value.`
+                },
+
+                history: {
+                    'world war 2': `⚔️ **World War II (1939-1945)** - The deadliest conflict in human history.<br><br><strong>Key Events:</strong><br><br><strong>1939:</strong> Germany invades Poland, Britain and France declare war<br><br><strong>1941:</strong><br>• Germany invades Soviet Union<br>• Pearl Harbor attack brings US into war<br><br><strong>1942:</strong><br>• Battle of Stalingrad begins<br>• Battle of Midway - US naval victory<br><br><strong>1944:</strong><br>• D-Day Normandy invasion<br>• Soviet offensives liberate Eastern Europe<br><br><strong>1945:</strong><br>• Germany surrenders (May 8)<br>• Atomic bombs on Japan<br>• Japan surrenders (August 15)<br><br><strong>Aftermath:</strong> 70-85 million deaths, United Nations formation, Cold War begins.`
+                },
+
+                movies: {
+                    'sci-fi movies': `🎬 **Best Sci-Fi Movies of All Time**<br><br><strong>Classic Era:</strong><br>• **2001: A Space Odyssey (1968)** - Kubrick's masterpiece about AI and human evolution<br>• **Blade Runner (1982)** - Dystopian future questioning what makes us human<br>• **The Matrix (1999)** - Reality-bending cyberpunk thriller<br><br><strong>Modern Classics:</strong><br>• **Interstellar (2014)** - Space exploration with emotional depth<br>• **Arrival (2016)** - Linguistic approach to first contact<br>• **Ex Machina (2014)** - AI consciousness and the Turing test<br><br><strong>Action Sci-Fi:</strong><br>• **Terminator 2 (1991)** - Time travel and AI uprising<br>• **Aliens (1986)** - Perfect sequel combining horror and action<br>• **Star Wars (1977)** - Space opera that defined a generation<br><br><strong>Recent Standouts:</strong><br>• **Dune (2021)** - Epic adaptation of Herbert's classic<br>• **Everything Everywhere All at Once (2022)** - Multiverse adventure`
+                }
+            },
+
+            sinhala: {
+                science: {
+                    'ක්වොන්ටම් යාන්ත්‍රික විද්‍යාව': `🔬 **ක්වොන්ටම් යාන්ත්‍රික විද්‍යාව** - පරමාණුක හා උප-පරමාණුක පරිමාණයේ පදාර්ථ හා ශක්ති හැසිරීම විස්තර කරන භෞතික විද්‍යා ශාඛාවයි.<br><br><div class="sinhala-text"><strong>ප්‍රධාන මූලධර්ම:</strong><br><br><strong>1. තරංග-කණ ද්විත්වතාවය:</strong> සියලු පදාර්ථ තරංග හා කණ ගුණ ප්‍රදර්ශනය කරයි.<br><br><strong>2. අනිශ්චිතතා මූලධර්මය:</strong> කණයක නිශ්චිත ස්ථානය හා ගම්‍යතාව එකම කාలයේ නිශ්චිත ලෙස දැනගත නොහැක.<br><br><strong>3. අධිස්ථාපනය:</strong> නිරීක්ෂණයට ලක් කරන තෙක් කණ එකම වේලාවේ විවිධ තත්වයන්හි පවතී.<br><br><strong>4. ක්වොන්ටම් ගැටගැසීම:</strong> කණ අදුරු ලෙස සම්බන්ධ වී දුරතුව නොසලකා එකිනෙකාට ක්ෂණිකව බලපායි.<br><br><strong>යෙදුම්:</strong><br>• ලේසර් හා LED තාක්ෂණය<br>• වෛද්‍ය MRI යන්ත්‍ර<br>• පරිගණක ප්‍රොසේසර<br>• ක්වොන්ටම් පරිගණක (සංවර්ධනය වෙමින්)<br>• GPS චන්ද්‍රිකා නිරවද්‍යතාව</div>`
+                }
+            }
+        };
+
+        let conversationHistory = [];
+        let isTyping = false;
+        let isPaused = false;
+        let currentTypingTimeout = null;
+        let currentModel = 'flash';
+        let resetTimerInterval = null;
+        let dropdownOpen = false;
+        let userMenuOpen = false;
+
+        // Language detection function
+        function detectLanguage(text) {
+            const sinhalaPattern = /[\u0D80-\u0DFF]/;
+            return sinhalaPattern.test(text) ? 'sinhala' : 'english';
+        }
+
+        // Authentication Functions
+        function showLoading(text = "Loading...") {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            clearMessages();
+        }
+
+        function showLogin() {
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            clearMessages();
+        }
+
+        function clearMessages() {
+            document.getElementById('signupError').style.display = 'none';
+            document.getElementById('signupSuccess').style.display = 'none';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function showSuccess(elementId, message) {
+            const successEl = document.getElementById(elementId);
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            if (userManager.currentUser) {
+                showChatInterface();
+            } else {
+                showAuthInterface();
+            }
+
+            document.getElementById('signupFormElement').addEventListener('submit', handleSignup);
+            document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+            
+            // Auto-resize textarea
+            const chatInput = document.getElementById('chatInput');
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+
+            // Send message on Enter (but not Shift+Enter)
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Handle clicks outside dropdowns to close them - Updated
+            document.addEventListener('click', function(e) {
+                // Don't handle clicks that are already handled by dropdown initialization
+                if (e.target.closest('.model-selector')) {
+                    return;
+                }
+                if (!e.target.closest('.user-menu')) {
+                    closeUserMenu();
+                }
+            });
+
+            // Prevent zoom on double tap for mobile
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function (event) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+        });
+
+        function handleSignup(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+
+            if (!name || !email || !password) {
+                showError('signupError', 'Please fill in all fields');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('signupError', 'Password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                showLoading('Creating your account...');
+                
+                const user = userManager.signup(name, email, password);
+                
+                setTimeout(() => {
+                    hideLoading();
+                    showSuccess('signupSuccess', 'Account created successfully! Redirecting...');
+                    
+                    setTimeout(() => {
+                        showLoading('Setting up your workspace...');
+                        
+                        setTimeout(() => {
+                            userManager.saveCurrentUser(user);
+                            hideLoading();
+                            showChatInterface();
+                        }, 1000);
+                    }, 1500);
+                }, 800);
+                
+            } catch (error) {
+                hideLoading();
+                showError('signupError', error.message);
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showError('loginError', 'Please fill in all fields');
+                return;
+            }
+
+            try {
+                showLoading('Signing you in...');
+                
+                const user = userManager.login(email, password);
+                
+                setTimeout(() => {
+                    hideLoading();
+                    showLoading('Loading your workspace...');
+                    
+                    setTimeout(() => {
+                        userManager.saveCurrentUser(user);
+                        hideLoading();
+                        showChatInterface();
+                    }, 1000);
+                }, 800);
+                
+            } catch (error) {
+                hideLoading();
+                showError('loginError', error.message);
+            }
+        }
+
+        function showAuthInterface() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('chatContainer').style.display = 'none';
+        }
+
+        function showChatInterface() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('chatContainer').style.display = 'flex';
+            
+            initializeChat();
+            initializeDropdown();
+            updateUserDisplay();
+            startResetTimer();
+        }
+
+        function initializeChat() {
+            const sendButton = document.getElementById('sendButton');
+            sendButton.addEventListener('click', sendMessage);
+        }
+
+        function initializeDropdown() {
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            const menuItems = dropdownMenu.querySelectorAll('.menu-item');
+
+            dropdownToggle.addEventListener('click', toggleDropdown);
+
+            menuItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const value = item.dataset.value;
+                    const limit = item.dataset.limit;
+                    const modelName = item.querySelector('.item-subtitle').textContent;
+                    
+                    currentModel = value;
+                    document.querySelector('.selected-text').textContent = modelName;
+                    
+                    if (userManager.currentUser) {
+                        userManager.currentUser.currentModel = currentModel;
+                        userManager.saveCurrentUser(userManager.currentUser);
+                    }
+                    
+                    updateUsageDisplay();
+                    updateInputPlaceholder();
+                    closeDropdown();
+                });
+            });
+        }
+
+        function toggleDropdown() {
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            
+            dropdownOpen = !dropdownOpen;
+            
+            if (dropdownOpen) {
+                dropdownToggle.classList.add('active');
+                dropdownMenu.classList.add('visible');
+            } else {
+                closeDropdown();
+            }
+        }
+
+        function closeDropdown() {
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            
+            dropdownOpen = false;
+            dropdownToggle.classList.remove('active');
+            dropdownMenu.classList.remove('visible');
+        }
+
+        function toggleUserMenu() {
+            const userDropdown = document.getElementById('userDropdown');
+            
+            userMenuOpen = !userMenuOpen;
+            
+            if (userMenuOpen) {
+                userDropdown.classList.add('visible');
+            } else {
+                closeUserMenu();
+            }
+        }
+
+        function closeUserMenu() {
+            const userDropdown = document.getElementById('userDropdown');
+            userMenuOpen = false;
+            userDropdown.classList.remove('visible');
+        }
+
+        function updateUserDisplay() {
+            if (!userManager.currentUser) return;
+
+            const userEmail = document.getElementById('userEmail');
+            const userAvatar = document.getElementById('userAvatar');
+
+            userEmail.textContent = userManager.currentUser.email;
+            userAvatar.textContent = userManager.getCurrentUserInitials();
+
+            // Load saved model
+            if (userManager.currentUser.currentModel) {
+                currentModel = userManager.currentUser.currentModel;
+                const modelName = currentModel === 'flash' ? 'I FEX 1.5' : 'I FEX 2.0';
+                document.querySelector('.selected-text').textContent = modelName;
+            }
+
+            updateUsageDisplay();
+            updateInputPlaceholder();
+        }
+
+        function updateUsageDisplay() {
+            if (!userManager.currentUser) return;
+
+            const messageCounter = document.getElementById('messageCounter');
+            const usageFill = document.getElementById('usageFill');
+            const usageText = document.getElementById('usageText');
+            const resetTimer = document.getElementById('resetTimer');
+
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            const available = limit - used;
+
+            messageCounter.textContent = `${used}/${limit}`;
+            
+            const percentage = (used / limit) * 100;
+            usageFill.style.width = `${percentage}%`;
+            
+            usageText.textContent = `${used} of ${limit} messages used`;
+
+            // Update message counter styling
+            messageCounter.className = 'message-counter';
+            if (used >= limit) {
+                messageCounter.classList.add('exceeded');
+            } else if (used >= limit * 0.8) {
+                messageCounter.classList.add('warning');
+            }
+
+            // Show reset timer if at limit
+            const timeToReset = userManager.getTimeToReset(currentModel);
+            if (used >= limit && timeToReset) {
+                resetTimer.textContent = `Resets in ${timeToReset}`;
+                resetTimer.style.display = 'block';
+            } else {
+                resetTimer.style.display = 'none';
+            }
+
+            // Update quick actions availability
+            updateQuickActionsState();
+        }
+
+        function updateQuickActionsState() {
+            if (!userManager.currentUser) return;
+
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            const quickActions = document.querySelectorAll('.quick-action');
+
+            quickActions.forEach(action => {
+                if (used >= limit) {
+                    action.classList.add('disabled');
+                } else {
+                    action.classList.remove('disabled');
+                }
+            });
+        }
+
+        function updateInputPlaceholder() {
+            if (!userManager.currentUser) return;
+
+            const chatInput = document.getElementById('chatInput');
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            const available = limit - used;
+
+            if (available > 0) {
+                chatInput.placeholder = `Ask me anything in English or Sinhala... You have ${available} messages remaining!`;
+            } else {
+                chatInput.placeholder = "Message limit reached. Switch models or wait for reset.";
+            }
+        }
+
+        function startResetTimer() {
+            if (resetTimerInterval) {
+                clearInterval(resetTimerInterval);
+            }
+
+            resetTimerInterval = setInterval(() => {
+                if (userManager.currentUser) {
+                    userManager.checkAndResetLimits(userManager.currentUser);
+                    userManager.saveUsers();
+                    userManager.saveCurrentUser(userManager.currentUser);
+                    updateUsageDisplay();
+                }
+            }, 60000); // Check every minute
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message || isTyping) return;
+
+            // Check message limit
+            if (!userManager.currentUser) return;
+            
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            
+            if (used >= limit) {
+                showCornerNotification();
+                return;
+            }
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Update message count
+            userManager.updateMessageCount(currentModel);
+            updateUsageDisplay();
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Generate AI response
+            setTimeout(() => {
+                const response = generateResponse(message);
+                hideTypingIndicator();
+                typeMessage(response, 'ai');
+            }, 1500);
+        }
+
+        function addMessage(content, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+            } else {
+                messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+                
+                // Add message actions for AI messages
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+                actionsDiv.innerHTML = `
+                    <button class="message-action-btn positive" onclick="likeMessage(this)" title="Good response">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M7 10v12M21 12l-2-2H7l4-7c0-1.105.895-2 2-2 1.657 0 3 1.343 3 3v4h6.5c1.38 0 2.5 1.12 2.5 2.5 0 .276-.056.54-.158.78L19 21H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="message-action-btn negative" onclick="dislikeMessage(this)" title="Poor response">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M17 14V2M3 12l2 2h12l-4 7c0 1.105-.895 2-2 2-1.657 0-3-1.343-3-3v-4H1.5C.12 16 0 14.88 0 13.5c0-.276.056-.54.158-.78L5 3h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button class="message-action-btn" onclick="copyMessage(this)" title="Copy message">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                `;
+                messageDiv.appendChild(actionsDiv);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function typeMessage(content, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            messageDiv.appendChild(contentDiv);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            isTyping = true;
+            isPaused = false;
+            updateSendButton();
+
+            let index = 0;
+            const typingSpeed = 30;
+
+            function typeNextChar() {
+                if (index < content.length && !isPaused) {
+                    const char = content.charAt(index);
+                    
+                    if (char === '<') {
+                        // Handle HTML tags
+                        const tagEnd = content.indexOf('>', index);
+                        if (tagEnd !== -1) {
+                            contentDiv.innerHTML += content.substring(index, tagEnd + 1);
+                            index = tagEnd + 1;
+                        } else {
+                            contentDiv.innerHTML += char;
+                            index++;
+                        }
+                    } else {
+                        contentDiv.innerHTML += char;
+                        index++;
+                    }
+                    
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    currentTypingTimeout = setTimeout(typeNextChar, typingSpeed);
+                } else if (index >= content.length) {
+                    // Typing complete
+                    isTyping = false;
+                    isPaused = false;
+                    updateSendButton();
+                    
+                    // Add message actions for AI messages
+                    if (sender === 'ai') {
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'message-actions';
+                        actionsDiv.innerHTML = `
+                            <button class="message-action-btn positive" onclick="likeMessage(this)" title="Good response">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M7 10v12M21 12l-2-2H7l4-7c0-1.105.895-2 2-2 1.657 0 3 1.343 3 3v4h6.5c1.38 0 2.5 1.12 2.5 2.5 0 .276-.056.54-.158.78L19 21H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="message-action-btn negative" onclick="dislikeMessage(this)" title="Poor response">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M17 14V2M3 12l2 2h12l-4 7c0 1.105-.895 2-2 2-1.657 0-3-1.343-3-3v-4H1.5C.12 16 0 14.88 0 13.5c0-.276.056-.54.158-.78L5 3h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="message-action-btn" onclick="copyMessage(this)" title="Copy message">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        `;
+                        messageDiv.appendChild(actionsDiv);
+                    }
+                }
+            }
+
+            typeNextChar();
+        }
+
+        function generateResponse(message) {
+            const language = detectLanguage(message);
+            const lowerMessage = message.toLowerCase();
+            
+            // Math calculations
+            const mathPattern = /(\d+)\s*[×*]\s*(\d+)\s*\+?\s*(\d+)?/;
+            const mathMatch = lowerMessage.match(mathPattern);
+            if (mathMatch) {
+                const num1 = parseInt(mathMatch[1]);
+                const num2 = parseInt(mathMatch[2]);
+                const num3 = mathMatch[3] ? parseInt(mathMatch[3]) : 0;
+                const result = (num1 * num2) + num3;
+                
+                return `🧮 **Mathematical Calculation**<br><br>Let me solve this step by step:<br><br><span class="math-expression">${num1} × ${num2}${num3 > 0 ? ' + ' + num3 : ''}</span><br><br>First: ${num1} × ${num2} = ${num1 * num2}<br>${num3 > 0 ? `Then: ${num1 * num2} + ${num3} = ${result}` : ''}<br><br><div class="math-result">Final Answer: ${result}</div>`;
+            }
+
+            // Check knowledge base
+            const kb = knowledgeBase[language];
+            if (kb) {
+                for (const category in kb) {
+                    for (const topic in kb[category]) {
+                        if (lowerMessage.includes(topic) || (language === 'sinhala' && message.includes(topic))) {
+                            return kb[category][topic];
+                        }
+                    }
+                }
+            }
+
+            // General responses based on content
+            if (lowerMessage.includes('artificial intelligence') || lowerMessage.includes('ai ')) {
+                return knowledgeBase.english.science['artificial intelligence'];
+            }
+            
+            if (lowerMessage.includes('quantum mechanics') || lowerMessage.includes('quantum physics')) {
+                return knowledgeBase.english.science['quantum mechanics'];
+            }
+            
+            if (lowerMessage.includes('world war') || lowerMessage.includes('wwii') || lowerMessage.includes('ww2')) {
+                return knowledgeBase.english.history['world war 2'];
+            }
+            
+            if (lowerMessage.includes('sci-fi') || lowerMessage.includes('science fiction') || lowerMessage.includes('movies')) {
+                return knowledgeBase.english.movies['sci-fi movies'];
+            }
+
+            // Default responses
+            const defaultResponses = [
+                `Thank you for your question! As an AI assistant, I'm here to help with a wide range of topics including science, mathematics, history, technology, and more.<br><br>Could you please be more specific about what you'd like to know? For example:<br><br>• Ask about scientific concepts like quantum physics or biology<br>• Request help with mathematical calculations<br>• Inquire about historical events or figures<br>• Get movie recommendations or analysis<br>• Ask questions in Sinhala: සිංහල භාෂාවෙන් ප්‍රශ්න ඇසන්න<br><br>I'll provide detailed, informative responses to help you learn!`,
+                
+                `I understand you're looking for information! I have extensive knowledge across many fields and can help you with:<br><br><strong>🔬 Science & Technology:</strong> Physics, chemistry, biology, AI, computer science<br><strong>🧮 Mathematics:</strong> Algebra, calculus, statistics, problem solving<br><strong>📚 History:</strong> World history, civilizations, historical analysis<br><strong>🎬 Entertainment:</strong> Movies, books, cultural topics<br><strong>🌍 Languages:</strong> English and Sinhala support<br><br>Please feel free to ask me anything specific, and I'll provide a comprehensive answer!`,
+                
+                `Hello! I'm ready to assist you with detailed information on virtually any topic. My knowledge spans:<br><br>• **Advanced Sciences:** From quantum mechanics to biotechnology<br>• **Complex Mathematics:** Calculations, theories, and applications<br>• **Rich History:** Events, cultures, and historical analysis<br>• **Modern Technology:** AI, programming, and innovation<br>• **Sinhala Language:** සිංහල භාෂාව සඳහා සහාය<br><br>What would you like to explore today? I'll provide thorough, educational responses!`
+            ];
+            
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function updateSendButton() {
+            const sendButton = document.getElementById('sendButton');
+            
+            if (isTyping && !isPaused) {
+                sendButton.innerHTML = '⏸️';
+                sendButton.classList.add('pause-button');
+                sendButton.title = 'Pause typing';
+            } else if (isTyping && isPaused) {
+                sendButton.innerHTML = '▶️';
+                sendButton.classList.remove('pause-button');
+                sendButton.title = 'Resume typing';
+            } else {
+                sendButton.innerHTML = '➤';
+                sendButton.classList.remove('pause-button');
+                sendButton.title = 'Send message';
+            }
+        }
+
+        function insertQuickAction(text) {
+            if (!userManager.currentUser) return;
+            
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            
+            if (used >= limit) {
+                showCornerNotification();
+                return;
+            }
+
+            const chatInput = document.getElementById('chatInput');
+            chatInput.value = text;
+            chatInput.focus();
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+        }
+
+        function startNewChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        Hello! I'm your advanced AI assistant with comprehensive knowledge across many fields. You have ${getAvailableMessages()} messages available with your current model.<br><br>
+                        I can help you with:<br><br>
+                        • <strong>Mathematics:</strong> Complex calculations, algebra, calculus, statistics<br>
+                        • <strong>Science:</strong> Physics, chemistry, biology, astronomy<br>
+                        • <strong>Movies & Entertainment:</strong> Films, recommendations, analysis<br>
+                        • <strong>History:</strong> World history, civilizations, historical figures<br>
+                        • <strong>Technology:</strong> Programming, AI, computers, software<br>
+                        • <strong>Sinhala Language:</strong> සිංහල භාෂාවෙන් ප්‍රශ්න ඇසීමට හැකියාව<br><br>
+                        Try asking me anything in English or Sinhala! I'll provide detailed answers with realistic typing animations!
+                    </div>
+                </div>
+            `;
+            
+            conversationHistory = [];
+            isTyping = false;
+            isPaused = false;
+            if (currentTypingTimeout) {
+                clearTimeout(currentTypingTimeout);
+            }
+            
+            const sendButton = document.getElementById('sendButton');
+            sendButton.innerHTML = '➤';
+            sendButton.classList.remove('pause-button');
+            
+            hideTypingIndicator();
+            
+            const input = document.getElementById('chatInput');
+            input.value = '';
+            input.style.height = 'auto';
+            
+            chatMessages.scrollTop = 0;
+        }
+
+        function getAvailableMessages() {
+            if (!userManager.currentUser) return 0;
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const used = userManager.currentUser.messageUsage[currentModel].count;
+            return limit - used;
+        }
+
+        // Corner notification functions
+        function showCornerNotification() {
+            const notification = document.getElementById('cornerNotification');
+            const message = document.getElementById('notificationMessage');
+            
+            const modelName = currentModel === 'flash' ? 'I FEX 1.5' : 'I FEX 2.0';
+            const limit = currentModel === 'pro' ? 5 : 10;
+            const resetTime = userManager.getTimeToReset(currentModel);
+            const resetText = resetTime ? ` Resets in ${resetTime}.` : ' Switch models or wait for reset.';
+            
+            message.textContent = `You've used all ${limit} messages for the ${modelName} model.${resetText}`;
+            
+            notification.classList.remove('hide');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                if (notification.classList.contains('show')) {
+                    hideCornerNotification();
+                }
+            }, 10000);
+        }
+
+        function hideCornerNotification() {
+            const notification = document.getElementById('cornerNotification');
+            notification.classList.remove('show');
+            notification.classList.add('hide');
+        }
+
+        function switchToOtherModel() {
+            const otherModel = currentModel === 'flash' ? 'pro' : 'flash';
+            const otherModelName = otherModel === 'flash' ? 'I FEX 1.5' : 'I FEX 2.0';
+            
+            document.querySelector('.selected-text').textContent = otherModelName;
+            currentModel = otherModel;
+            
+            if (userManager.currentUser) {
+                userManager.currentUser.currentModel = currentModel;
+                userManager.saveCurrentUser(userManager.currentUser);
+            }
+            
+            updateUsageDisplay();
+            updateInputPlaceholder();
+            hideCornerNotification();
+            
+            const notification = document.getElementById('cornerNotification');
+            const message = document.getElementById('notificationMessage');
+            
+            message.textContent = `Switched to ${otherModelName} model. You can continue messaging!`;
+            notification.style.background = 'linear-gradient(135deg, #238636, #2ea043)';
+            notification.classList.remove('hide');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.style.background = 'linear-gradient(135deg, #da3633, #b91c1c)';
+                hideCornerNotification();
+            }, 3000);
+        }
+
+        // Message action functions
+        function likeMessage(button) {
+            button.style.color = 'var(--accent-primary)';
+            button.style.borderColor = 'var(--accent-primary)';
+            setTimeout(() => {
+                button.style.color = '';
+                button.style.borderColor = '';
+            }, 2000);
+        }
+
+        function dislikeMessage(button) {
+            button.style.color = 'var(--danger-color)';
+            button.style.borderColor = 'var(--danger-color)';
+            setTimeout(() => {
+                button.style.color = '';
+                button.style.borderColor = '';
+            }, 2000);
+        }
+
+        function copyMessage(button) {
+            const messageContent = button.closest('.message').querySelector('.message-content').textContent;
+            navigator.clipboard.writeText(messageContent).then(() => {
+                button.style.color = 'var(--accent-primary)';
+                button.style.borderColor = 'var(--accent-primary)';
+                setTimeout(() => {
+                    button.style.color = '';
+                    button.style.borderColor = '';
+                }, 2000);
+            });
+        }
+
+        // User menu functions
+        function showAccountSettings() {
+            closeUserMenu();
+            alert('Account settings feature coming soon!');
+        }
+
+        function showUsageDetails() {
+            closeUserMenu();
+            if (!userManager.currentUser) return;
+            
+            const flashUsed = userManager.currentUser.messageUsage.flash.count;
+            const proUsed = userManager.currentUser.messageUsage.pro.count;
+            const flashReset = userManager.getTimeToReset('flash');
+            const proReset = userManager.getTimeToReset('pro');
+            
+            let message = `Usage Details:\n\n`;
+            message += `I FEX 1.5: ${flashUsed}/10 messages used\n`;
+            if (flashReset) message += `Resets in: ${flashReset}\n`;
+            message += `\nI FEX 2.0: ${proUsed}/5 messages used\n`;
+            if (proReset) message += `Resets in: ${proReset}\n`;
+            
+            alert(message);
+        }
+
+        function logout() {
+            closeUserMenu();
+            userManager.logout();
+            if (resetTimerInterval) {
+                clearInterval(resetTimerInterval);
+            }
+            showAuthInterface();
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Global functions for debugging (can be removed in production)
+        window.resetAllData = function() {
+            localStorage.removeItem('knox_users');
+            localStorage.removeItem('knox_current_user');
+            location.reload();
+        };
+
+        // Handle send button click during typing
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendButton = document.getElementById('sendButton');
+            if (sendButton) {
+                sendButton.addEventListener('click', function() {
+                    if (isTyping) {
+                        if (isPaused) {
+                            // Resume typing
+                            isPaused = false;
+                            updateSendButton();
+                            // Continue typing where we left off
+                            if (currentTypingTimeout) {
+                                clearTimeout(currentTypingTimeout);
+                            }
+                            // Resume the typing animation
+                        } else {
+                            // Pause typing
+                            isPaused = true;
+                            updateSendButton();
+                            if (currentTypingTimeout) {
+                                clearTimeout(currentTypingTimeout);
+                            }
+                        }
+                    } else {
+                        sendMessage();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
